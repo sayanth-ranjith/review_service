@@ -8,7 +8,7 @@ public enum ReviewServiceType implements GeneralReferenceType {
     SUBMIT_REVIEW(Constants.SUBMIT_REVIEW),
     GET_REVIEW("getReview");
 
-    public static final class Constants{
+    public static final class Constants {
         public static final String SUBMIT_REVIEW = "submitReview";
     }
 

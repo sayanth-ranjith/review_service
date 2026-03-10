@@ -4,9 +4,11 @@ import com.kafkaDemo.demo.base.helper.ProcessorDataContext;
 import com.kafkaDemo.demo.base.models.BaseRequestModel;
 import com.kafkaDemo.demo.base.processor.BaseProcessorService;
 import com.kafkaDemo.demo.entity.CustomerReviewDetailsEntity;
+import com.kafkaDemo.demo.model.ReviewCreatedKafkaEvent;
 import com.kafkaDemo.demo.model.SubmitReviewRequest;
 import com.kafkaDemo.demo.model.SubmitReviewResponse;
 import com.kafkaDemo.demo.repo.CustomerReviewDetailsRepo;
+import com.kafkaDemo.demo.service.kafka.ReviewEventProducer;
 import com.kafkaDemo.demo.type.ReviewServiceType;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -22,11 +24,23 @@ public class SubmitReviewService implements BaseProcessorService<BaseRequestMode
     @Autowired
     private CustomerReviewDetailsRepo customerReviewDetailsRepo;
 
+    @Autowired
+    private ReviewEventProducer reviewEventProducer;
+
     @Override
     public ProcessorDataContext process(BaseRequestModel request, Map<String, Object> context) {
         SubmitReviewRequest submitReviewRequest = (SubmitReviewRequest) request;
-        log.info("Processing submit review request for user: {}", ((SubmitReviewRequest) request).getUserId());
         Integer id = saveToReviewDb(submitReviewRequest);
+        try {
+            ReviewCreatedKafkaEvent event = new ReviewCreatedKafkaEvent();
+            event.setReviewText(submitReviewRequest.getComment());
+            event.setProductId(submitReviewRequest.getProductId());
+            event.setReviewId(id);
+            reviewEventProducer.sendReviewCreatedEvent(event);
+        }
+        catch (Exception ex) {
+            System.out.println("Some exception occured while trying to send event to kafka for review id " + id);
+        }
         SubmitReviewResponse response = new SubmitReviewResponse();
         response.setReviewId(id);
         response.setStatus("SUCCESS");
