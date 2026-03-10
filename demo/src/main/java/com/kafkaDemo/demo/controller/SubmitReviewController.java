@@ -1,10 +1,12 @@
 package com.kafkaDemo.demo.controller;
 
+import com.kafkaDemo.demo.base.helper.ProcessorDataContext;
 import com.kafkaDemo.demo.model.SubmitReviewRequest;
 import com.kafkaDemo.demo.base.processor.BaseProcessorService;
 import com.kafkaDemo.demo.base.delegators.ServiceDelegator;
 import com.kafkaDemo.demo.type.ReviewServiceType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +23,7 @@ public class SubmitReviewController {
     public ResponseEntity<?> submitReview(@RequestBody SubmitReviewRequest request) {
         BaseProcessorService<SubmitReviewRequest> processor = serviceDelegator.delegateService(ReviewServiceType.SUBMIT_REVIEW, request);
         Map<String, Object> context = new HashMap<>();
-        processor.process(request, context)  ;
-        return null;
+        ProcessorDataContext processorDataContext = processor.process(request, context);
+        return new ResponseEntity<>(processorDataContext.getBaseResponseModel(), HttpStatus.OK);
     }
 }
