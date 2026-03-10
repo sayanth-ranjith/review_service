@@ -19,7 +19,8 @@ import java.util.Map;
 
 @Slf4j
 @Component(value = ReviewServiceType.Constants.SUBMIT_REVIEW)
-public class SubmitReviewService implements BaseProcessorService<BaseRequestModel> {
+@Transactional
+public class SubmitReviewService implements BaseProcessorService<SubmitReviewRequest> {
 
     @Autowired
     private CustomerReviewDetailsRepo customerReviewDetailsRepo;
@@ -28,18 +29,17 @@ public class SubmitReviewService implements BaseProcessorService<BaseRequestMode
     private ReviewEventProducer reviewEventProducer;
 
     @Override
-    public ProcessorDataContext process(BaseRequestModel request, Map<String, Object> context) {
-        SubmitReviewRequest submitReviewRequest = (SubmitReviewRequest) request;
-        Integer id = saveToReviewDb(submitReviewRequest);
+    public ProcessorDataContext process(SubmitReviewRequest request, Map<String, Object> context) {
+        Integer id = saveToReviewDb(request);
         try {
             ReviewCreatedKafkaEvent event = new ReviewCreatedKafkaEvent();
-            event.setReviewText(submitReviewRequest.getComment());
-            event.setProductId(submitReviewRequest.getProductId());
+            event.setReviewText(request.getComment());
+            event.setProductId(request.getProductId());
             event.setReviewId(id);
             reviewEventProducer.sendReviewCreatedEvent(event);
         }
         catch (Exception ex) {
-            System.out.println("Some exception occured while trying to send event to kafka for review id " + id);
+            log.info("Some exception occured while trying to send event to kafka for review id {}", id);
         }
         SubmitReviewResponse response = new SubmitReviewResponse();
         response.setReviewId(id);
@@ -49,7 +49,7 @@ public class SubmitReviewService implements BaseProcessorService<BaseRequestMode
         return processorDataContext;
     }
 
-    @Transactional
+
     private Integer saveToReviewDb(SubmitReviewRequest submitReviewRequest) {
         return customerReviewDetailsRepo
                 .findByProductIdAndUserId(submitReviewRequest.getProductId(), submitReviewRequest.getUserId())
