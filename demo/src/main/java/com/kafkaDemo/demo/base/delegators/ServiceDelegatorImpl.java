@@ -16,7 +16,7 @@ public class ServiceDelegatorImpl implements ServiceDelegator {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T extends BaseRequestModel> BaseProcessorService<T> delegateService(GeneralReferenceType type, T request) {
+    public <T extends BaseRequestModel> BaseProcessorService<T> delegateService(GeneralReferenceType type, T request) throws RuntimeException{
         BaseProcessorService<T> bean = (BaseProcessorService<T>) applicationContext.getBean(type.getType());
         if (bean != null) {
             return bean;
